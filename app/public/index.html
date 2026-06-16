@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HappyDavid - Temperature Monitor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .dashboard {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 900px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header .subtitle {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            background: #4CAF50;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            margin-top: 10px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .temperature-display {
+            text-align: center;
+            padding: 30px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+
+        .temperature-value {
+            font-size: 4em;
+            font-weight: bold;
+            color: #333;
+            transition: all 0.3s ease;
+        }
+
+        .temperature-value .unit {
+            font-size: 0.5em;
+            color: #666;
+        }
+
+        .temperature-label {
+            color: #666;
+            font-size: 1em;
+            margin-top: 5px;
+        }
+
+        .timestamp {
+            color: #999;
+            font-size: 0.8em;
+            margin-top: 10px;
+        }
+
+        .history-section {
+            margin-top: 30px;
+        }
+
+        .history-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .history-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .history-item {
+            background: white;
+            padding: 8px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .history-item .value {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #333;
+        }
+
+        .history-item .time {
+            font-size: 0.7em;
+            color: #999;
+        }
+
+        .chart-container {
+            margin-top: 30px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        #chart {
+            width: 100%;
+            height: 200px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .dot.connected {
+            background: #4CAF50;
+            animation: pulse 1.5s infinite;
+        }
+
+        .dot.disconnected {
+            background: #f44336;
+        }
+
+        .status-text {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 600px) {
+            .dashboard {
+                padding: 20px;
+            }
+            .header h1 {
+                font-size: 1.8em;
+            }
+            .temperature-value {
+                font-size: 3em;
+            }
+            .history-grid {
+                grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <h1>🌡️ HappyDavid Monitor</h1>
+            <div class="subtitle">Real-time Temperature Dashboard</div>
+            <div class="status-badge">🟢 Live</div>
+        </div>
+
+        <div class="temperature-display">
+            <div class="temperature-value">
+                <span id="tempValue">--</span><span class="unit">°C</span>
+            </div>
+            <div class="temperature-label">Current Temperature</div>
+            <div class="timestamp" id="timestamp">Waiting for data...</div>
+            <div class="status-indicator">
+                <span class="dot connected" id="statusDot"></span>
+                <span class="status-text" id="statusText">Connected</span>
+            </div>
+        </div>
+
+        <div class="history-section">
+            <h3>📊 Temperature History</h3>
+            <div class="history-grid" id="historyGrid">
+                <div style="grid-column: 1/-1; text-align: center; color: #999; padding: 20px;">
+                    Waiting for data...
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="chart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        // WebSocket connection
+        const ws = new WebSocket(`ws://${window.location.host}`);
+        const tempElement = document.getElementById('tempValue');
+        const timestampElement = document.getElementById('timestamp');
+        const historyGrid = document.getElementById('historyGrid');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+
+        let chart = null;
+        let chartData = { labels: [], values: [] };
+
+        ws.onopen = () => {
+            console.log('Connected to WebSocket server');
+            statusDot.className = 'dot connected';
+            statusText.textContent = 'Connected';
+        };
+
+        ws.onclose = () => {
+            console.log('Disconnected from WebSocket server');
+            statusDot.className = 'dot disconnected';
+            statusText.textContent = 'Disconnected';
+        };
+
+        ws.onerror = (error) => {
+            console.error('WebSocket error:', error);
+            statusDot.className = 'dot disconnected';
+            statusText.textContent = 'Error';
+        };
+
+        ws.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                console.log('Received:', data);
+
+                if (data.type === 'temperature') {
+                    // Update current temperature
+                    tempElement.textContent = data.value;
+                    timestampElement.textContent = `Last updated: ${new Date(data.timestamp).toLocaleString()}`;
+
+                    // Update history
+                    if (data.history && data.history.length > 0) {
+                        updateHistory(data.history);
+                        updateChart(data.history);
+                    }
+                }
+            } catch (error) {
+                console.error('Error parsing data:', error);
+            }
+        };
+
+        function updateHistory(history) {
+            historyGrid.innerHTML = '';
+            // Show last 20 entries (reversed so newest is first)
+            const recent = history.slice(-20).reverse();
+            
+            recent.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'history-item';
+                div.innerHTML = `
+                    <div class="value">${item.value.toFixed(1)}°C</div>
+                    <div class="time">${item.time}</div>
+                `;
+                historyGrid.appendChild(div);
+            });
+        }
+
+        function updateChart(history) {
+            const ctx = document.getElementById('chart').getContext('2d');
+            
+            // Prepare data
+            const labels = history.map(item => item.time);
+            const values = history.map(item => item.value);
+
+            if (chart) {
+                chart.destroy();
+            }
+
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Temperature (°C)',
+                        data: values,
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#764ba2',
+                        pointRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            grid: {
+                                color: 'rgba(0,0,0,0.05)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                maxTicksLimit: 10,
+                                font: {
+                                    size: 10
+                                }
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        }
+
+        // Request current data when page loads
+        setTimeout(() => {
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'requestData' }));
+            }
+        }, 1000);
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</body>
+</html>
